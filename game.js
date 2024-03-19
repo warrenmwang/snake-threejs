@@ -5,8 +5,6 @@
   I can figure that out.
 */
 
-var assert = require('assert');
-
 // assume these are in pixels
 const WIDTH = 500;
 const HEIGHT = 500;
@@ -28,17 +26,69 @@ function randomValueInRange(min, max){
   return Math.random() * (max - min) + min;
 }
 
-class SnakeGame {
+// compute the euclidean distance between two points
+function euclideanDistance(cell1, cell2){
+  return Math.sqrt((cell1.row - cell2.row)**2 + (cell1.col - cell2.col)**2);
+}
+
+export class SnakeGame {
   constructor(gridWidth, gridHeight){
     this.score = 0;
     this.board = [];
-    assert.notEqual(gridWidth, undefined)
-    assert(gridHeight, undefined)
     this.gridWidth = gridWidth;
     this.gridHeight = gridHeight;
 
     // init board
     this.clearBoard()
+
+    // init snake position
+    this.head = this.getRandomBoardCell();
+    this.board[this.head.row][this.head.col] = 1;
+    this.snakeBody = [this.head];
+    this.tail = this.head;
+
+    // all apples must spawn at least alpha blocks away
+    // from the head
+    this.alpha = 2;
+    this.genApple();
+  }
+
+  // expect cell to be Object[int,int]
+  // returns true if given cell coordinate does not coincide
+  // with any part of the snake's current body (including head
+  // and tail), otherwise return false
+  checkCellNotInBody(cell){
+    const row = cell.row;
+    const col = cell.col;
+    for (const v of this.snakeBody) {
+      if (row === v.row || col === v.col){
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // need to generate an apple at a position that is at least
+  // alpha blocks away from the snake's head AND
+  // isn't in the snake's body in any way
+  genApple(){
+    let x = this.getRandomBoardCell();
+    while(!this.checkCellNotInBody(x) && 
+          (Math.trunc(euclideanDistance(this.head, x)) >= this.alpha)){
+      x = this.getRandomBoardCell();
+    }
+    this.board[x.row][x.col] = 2;
+  }
+
+  // TODO: grow the snake if head coincides with apple cell
+  growSnake(){
+    
+  }
+
+  // TODO: im not sure how im supposed to handle the movement of the snake
+  // like, how do i know how to make the snake body turn wherever the head had turned ? 
+  updateSnake(){
+
   }
 
   // clears board
@@ -54,6 +104,8 @@ class SnakeGame {
 
   // get a random valid board position
   // will be used to spawn in apples
+  // returns: Object with 2 properties - row and col (both ints)
+  // oh i want types, but we have to walk (js) before we run (ts).
   getRandomBoardCell(){
     let row = Math.trunc(randomValueInRange(0, this.gridHeight));
     let col = Math.trunc(randomValueInRange(0, this.gridWidth));
@@ -61,10 +113,15 @@ class SnakeGame {
   }
 }
 
-function devTesting(){
-  let game = new SnakeGame(GRIDSIZE_WIDTH, GRIDSIZE_HEIGHT);
-  console.log(game.board);
-  console.log(game.getRandomBoardCell())
-}
+// function devTesting(){
+//   let game = new SnakeGame(GRIDSIZE_WIDTH, GRIDSIZE_HEIGHT);
+//   // print the board
+//   for (const x of game.board) {
+//     for (const y of x) {
+//       process.stdout.write(`${y} `);
+//     }
+//     console.log(`\n`);
+//   }
+// }
 
-devTesting();
+// devTesting();
