@@ -193,6 +193,8 @@ function updateBoard(board) {
       else if (newBoardVal === 2) { newMaterial = RED_MESH; }
       else { console.error(`Invalid board value encoutered: ${newBoardVal}`)}
 
+      // if (DEBUG) { console.log(`update cube at (x,y) = (${col}, ${row})`) }
+
       // update the corresponding cell's cube's material (color)
       cubeDB[`${row},${col}`].material = newMaterial;
     }

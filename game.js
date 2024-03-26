@@ -44,21 +44,21 @@ export class SnakeGame {
 
     if (DEBUG) { console.log(`Board size: (W,H) = (${this.gridWidth},${this.gridHeight})`)}
 
-    // init board
+    // init board and direction matrix
     this.clearBoard()
+    this.clearDirection()
 
     // init snake position
     this.head = this.getRandomBoardCell();
     this.board[this.head.row][this.head.col] = 1;
     this.snakeBody.push(this.head)
-    this.tail = this.head; // ptr to tail
 
     if (DEBUG) { console.log(`Head at (x,y) = (${this.head.col},${this.head.row})`)}
 
     // all apples must spawn at least alpha blocks away
     // from the head
-    this.alpha = 2;
-    this.genApple();
+    this.alpha = 5;
+    this.apple = this.genApple();
   }
 
   // expect cell to be Object[int,int]
@@ -124,39 +124,90 @@ export class SnakeGame {
   // need to generate an apple at a position that is at least
   // alpha blocks away from the snake's head AND
   // isn't in the snake's body in any way
+  // return the object holding the apple's coords
   genApple(){
     let x = this.getRandomBoardCell();
-    while(this.isCellInBody(x) && 
+    while(!this.isCellInBody(x) && 
           (Math.trunc(euclideanDistance(this.head, x)) >= this.alpha)){
       x = this.getRandomBoardCell();
     }
     this.board[x.row][x.col] = 2;
     if (DEBUG) { console.log(`Apple spawn: (x,y) = (${x.col}, ${x.row})`)}
+
+    return x;
   }
 
-  // TODO: grow the snake if head coincides with apple cell
-  growSnake(moveDirection, nextCell){
-    /* grows the snake so the tail should just stay in the same spot 
-       and we just update the head forward, thus growing one
-       otherwise, if we didn't grow the snake, the "entire body" moves 
-       forward.
-       therefore, needs to update head, tail, snakebody, directions, board
-
-      Inputs:
-      moveDirection - int value indicating a direction in the cardinal directions
-      nextCell - next cell that the head is to move in
-
+  growSnake(moveDirection){
+    /* This function is called when the snake head eats an apple.
+       Just replace the apple with a new snake body (head), 
+       update the direction matrix, and respawn an apple.
     */
     if (DEBUG) { console.log('growSnake'); }
     
-    // update head
-    this.head = nextCell;
-    this.snakeBody.unshift(nextCell)
+    // update direction matrix for old head
+    this.direction[this.head.row][this.head.col] = moveDirection;
 
-    // update board making nextCell a snake body part
-    this.board[nextCell.row][nextCell.col] = 1;
+    // spawn a new head (the apple)
+    this.snakeBody.unshift(this.apple);
+    this.head = this.snakeBody[0];
+
+    // update board
+    this.board[this.head.row][this.head.col] = 1;
+
+    // update direction matrix for new head
+    this.direction[this.head.row][this.head.col] = moveDirection;
+
+    // spawn a new apple
+    this.apple = this.genApple();
+  }
+
+  moveSnake(moveDirection){
+    /* This function is called if the snake hasn't eaten an apple 
+       and thus we need to simulate moving the entire snake forward.
+    */
     
-    
+    // update the direction matrix with the direction
+    // current head is moving
+    this.direction[this.head.row][this.head.col] = moveDirection;
+
+    // move snake by using the direction in the direction matrix
+    var row, col, currDir;
+    for(const i in this.snakeBody){
+      row = this.snakeBody[i].row;
+      col = this.snakeBody[i].col;
+      currDir = this.direction[row][col];
+
+      if (DEBUG) { console.log(`currDir = ${currDir}`)}
+
+      this.board[row][col] = 0; // clear curr
+      
+      switch(currDir){
+        case 0: // up
+          row--;
+          this.snakeBody[i] = {row: row, col: col};
+          this.board[row][col] = 1;
+          break;
+        case 1: // right
+          col++;
+          this.snakeBody[i] = {row: row, col: col};
+          this.board[row][col] = 1;
+          break;
+        case 2: // down
+          row++;
+          this.snakeBody[i] = {row: row, col: col};
+          this.board[row][col] = 1;
+          break;
+        case 3: // left
+          col--;
+          this.snakeBody[i] = {row: row, col: col};
+          this.board[row][col] = 1;
+          break;
+      }
+    }
+
+    // update head pointer (first block in list)
+    this.head = this.snakeBody[0];
+ 
   }
 
   updateSnake(moveDirection){
@@ -198,9 +249,14 @@ export class SnakeGame {
     if ( !this.isNoCollision(nextCell) ) {
       return -1;
     }
-    // otherwise, update the snake
-    this.growSnake(moveDirection, nextCell);
-    
+    // grow the snake if ate the apple
+    if (nextCell.row === this.apple.row && nextCell.col === this.apple.col) {
+      this.growSnake(moveDirection);
+    } else {
+      // just move the snake in moveDirection
+      this.moveSnake(moveDirection);
+    }
+
     // check win condition (there exists no space left on board)
     // i believe the easiest way to win is if you try hard and 
     // only move your snake in a hamiltonian cycle.
@@ -221,6 +277,18 @@ export class SnakeGame {
         tmp.push(0);
       }
       this.board.push(tmp);
+    }
+  }
+
+  // clears the direction matrix
+  clearDirection(){
+    this.direction = [];
+    for(let i = 0; i < this.gridHeight; i++){
+      let tmp = [];
+      for(let j = 0; j < this.gridWidth; j++){
+        tmp.push(-1);
+      }
+      this.direction.push(tmp);
     }
   }
 
@@ -252,6 +320,8 @@ export class SnakeGame {
     if (DEBUG) {
       console.log(`Before Board:`);
       printBoard(this.board);
+      console.log(`Before Direction`)
+      printBoard(this.direction);
     }
    
     // TODO
@@ -261,6 +331,8 @@ export class SnakeGame {
     if (DEBUG) {
       console.log(`After Board:`);
       printBoard(this.board);
+      console.log(`After Direction`)
+      printBoard(this.direction);
     }
 
     return this.board;
@@ -273,18 +345,5 @@ function printBoard(board) {
     console.log(row.join(' '));
   });
 }
-
-// function devTesting(){
-//   let game = new SnakeGame(GRIDSIZE_WIDTH, GRIDSIZE_HEIGHT);
-//   // print the board
-//   for (const x of game.board) {
-//     for (const y of x) {
-//       process.stdout.write(`${y} `);
-//     }
-//     console.log(`\n`);
-//   }
-// }
-
-// devTesting();
 
 export default SnakeGame;
