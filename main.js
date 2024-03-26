@@ -4,7 +4,7 @@ import SnakeGame from './game.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
-const DEBUG = true;
+const DEBUG = false;
 
 // create blocks of different colors that represent our game board.
 // White (0xEDEADE) - Empty Blocks (0)

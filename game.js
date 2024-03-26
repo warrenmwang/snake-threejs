@@ -5,7 +5,7 @@
   I can figure that out.
 */
 
-var DEBUG = true;
+var DEBUG = false;
 
 /*
   Let us define the values in the board that will represent different things:
