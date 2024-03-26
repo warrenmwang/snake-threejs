@@ -4,7 +4,7 @@ import SnakeGame from './game.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
-var DEBUG = true;
+const DEBUG = true;
 
 // create blocks of different colors that represent our game board.
 // White (0xEDEADE) - Empty Blocks (0)
@@ -14,7 +14,12 @@ const WHITE_MESH = new THREE.MeshBasicMaterial( { color : 0xEDEADE } )
 const GREEN_MESH = new THREE.MeshBasicMaterial( { color : 0x00ff00 } )
 const RED_MESH = new THREE.MeshBasicMaterial( { color : 0xFF3131 } )
 
+const BOARD_WIDTH = 10;
+const BOARD_HEIGHT = 10;
+
 let renderer, scene, camera, controls, keyState;
+let prevMoveInputKey;
+let gameOver = false;
 // use a dict as a mapping of {row,col} -> cube
 // so that later we can use the cell coords to get the cube
 // reference that we may want to alter the color of 
@@ -23,7 +28,7 @@ let cubeDB = new Map();
 
 // time units are in milliseconds
 let lastUpdateTime = performance.now();
-const GAME_TICK = 500;
+const GAME_TICK = 150;
 
 function moveCamera() {
     let movementSpeed = 0.1;
@@ -57,6 +62,7 @@ function moveCamera() {
     }
 }
 
+// update game at regular timing
 // if the user enters a keystroke that is a registered 
 // input for our game, capture it and forward it to the game logic
 function updateGame(game) {
@@ -64,16 +70,7 @@ function updateGame(game) {
     game - the game object
   */
 
-  // check to see if it has been at least updateInterval time since the last update
-  let currentTime = performance.now();
-  let timeSinceLastUpdate = currentTime - lastUpdateTime;
-  if (timeSinceLastUpdate < GAME_TICK) {
-    return; // quit if not enough time has passed
-  }
-  // otherwise, update the game (and the lastUpdatetime)!
-  lastUpdateTime = currentTime;
-
-  // movement 
+  // get user movement input (refreshes as fast as the screen is drawn)
   var movementKeystroke;
   if (keyState['ArrowUp']) {
     movementKeystroke = 0;
@@ -83,24 +80,57 @@ function updateGame(game) {
     movementKeystroke = 2;
   } else if (keyState['ArrowLeft']) {
     movementKeystroke = 3;
-  } 
+  }
 
-  if (movementKeystroke !== undefined ) {
-    console.log(`entered: ${movementKeystroke}`)
-    var newBoard = game.nextGameState(movementKeystroke);
+  if (DEBUG) {
+    console.log(`entered: ${movementKeystroke}`);
+  }
+
+  if (movementKeystroke !== undefined) {
+    prevMoveInputKey = movementKeystroke;
+  }
+
+  var returnedGameState;
+  if (prevMoveInputKey !== undefined ) {
+
+    // only pass user input to the game at regular interval (that is, game state
+    // is updated much slower than the actual refresh rate of the scene drawing.)
+    // check to see if it has been at least updateInterval time since the last update
+    let currentTime = performance.now();
+    let timeSinceLastUpdate = currentTime - lastUpdateTime;
+    if (timeSinceLastUpdate < GAME_TICK) {
+      return; // quit if not enough time has passed
+    }
+    // otherwise, update the game (and the lastUpdatetime)!
+    lastUpdateTime = currentTime;
+
+    // pass movementKey to game
+    returnedGameState = game.nextGameState(prevMoveInputKey);
+    var newBoard = game.board;
+
     if (DEBUG) {
       console.log("updateGame - received newBoard:")
       newBoard.forEach(row => {
         console.log(row.join(' '));
       });
     }
+
+    // update board in scene
     updateBoard(newBoard);
-    return;
+
+  } 
+  switch(returnedGameState){
+    case 0: // continue game
+      return;
+    case 1: // a win (very unlikely) game is over
+      // TODO: update the scene if game is over
+      gameOver = true;
+      break;
+    case -1: // a loss, game is over
+      // TODO: update the scene if game is over
+      gameOver = true;
+      break;
   }
-
-  // TODO:
-  // pause game
-
 }
 
 // TODO: 
@@ -134,8 +164,6 @@ function updateGame(game) {
 // The X axis is red. The Y axis is green. The Z axis is blue. 
 // const axesHelper = new THREE.AxesHelper( 5 );
 // scene.add( axesHelper );
-
-
 
 
 // Should only be called from the first time board
@@ -252,7 +280,7 @@ function init() {
   document.addEventListener('keyup', (event) => keyState[event.code] = false);
 
   // create game object
-  var game = new SnakeGame(10, 10); // width, height
+  var game = new SnakeGame(BOARD_WIDTH, BOARD_HEIGHT); // width, height
 
 
   // draw the initial board in the scene from the inited board

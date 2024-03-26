@@ -7,14 +7,6 @@
 
 var DEBUG = true;
 
-// assume these are in pixels
-const WIDTH = 500;
-const HEIGHT = 500;
-
-// assume a square game board
-const GRIDSIZE_WIDTH = 20;
-const GRIDSIZE_HEIGHT = 10;
-
 /*
   Let us define the values in the board that will represent different things:
   0 - Empty Space
@@ -62,14 +54,11 @@ export class SnakeGame {
   }
 
   // expect cell to be Object[int,int]
-  // returns true if given cell coordinate does not coincide
-  // with any part of the snake's current body (including head
-  // and tail), otherwise return false
+  // returns true if given cell coordinate is in any part of the snakeBody
+  // otherwise return false
   isCellInBody(cell){
-    const row = cell.row;
-    const col = cell.col;
     for (const v of this.snakeBody) {
-      if (row === v.row && col === v.col){
+      if (cell.row === v.row && cell.col === v.col){
         return true;
       }
     }
@@ -127,8 +116,9 @@ export class SnakeGame {
   // return the object holding the apple's coords
   genApple(){
     let x = this.getRandomBoardCell();
-    while(!this.isCellInBody(x) && 
-          (Math.trunc(euclideanDistance(this.head, x)) >= this.alpha)){
+    // while random board cell is in the body
+    // or if the cell is too close to the head, generate a new cell
+    while(this.isCellInBody(x) || (Math.trunc(euclideanDistance(this.head, x)) < this.alpha)){
       x = this.getRandomBoardCell();
     }
     this.board[x.row][x.col] = 2;
@@ -311,10 +301,6 @@ export class SnakeGame {
         1 - right
         2 - down
         3 - left
-      output
-      0 - ok, updated, continue game.
-      1 - win, game over - no more cells to move in!
-      -1 - loss, game over - collision detected.
     */
 
     if (DEBUG) {
@@ -324,18 +310,23 @@ export class SnakeGame {
       printBoard(this.direction);
     }
    
-    // TODO
+    // TODO:
+    // Expected output from updateSnake
+    // 0 - ok, updated, continue game.
+    // 1 - win, game over - no more cells to move in!
+    // -1 - loss, game over - collision detected.
     let updateSnakeResult = this.updateSnake(moveDirection);
-    console.log(`updateSnake returned: ${updateSnakeResult}`)
+
 
     if (DEBUG) {
+      console.log(`updateSnake returned: ${updateSnakeResult}`)
       console.log(`After Board:`);
       printBoard(this.board);
       console.log(`After Direction`)
       printBoard(this.direction);
     }
 
-    return this.board;
+    return updateSnakeResult;
   }
 
 }
