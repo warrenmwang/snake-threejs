@@ -12,16 +12,16 @@ one found on cool math games found [here](https://www.coolmathgames.com/0-snake-
 
 ---
 ### Play Instructions
-Camera Lateral movement is controlled by:
-`WASD` - forward, left, back, right
-`Space` - up
-`Shift` - down
+Camera Lateral movement is controlled by:<br>
+`WASD` - forward, left, back, right<br>
+`Space` - up<br>
+`Shift` - down<br>
+Also able to adjust lateral position with Right Mouse button click and drag.
+
+Camera angle is controlled by the Left Mouse button click and drag
 
 Snake movement is controlled by `Arrow Keys`:
-`ArrowUp` - up
-`ArrowDown` - down
-`ArrowRight` - right
-`ArrowLeft` - left
-
-Adjust camera angle with the Left Mouse button click and drag
-Adjust camera lateral position with Right Mouse button click and drag
+`ArrowUp` - up<br>
+`ArrowDown` - down<br>
+`ArrowRight` - right<br>
+`ArrowLeft` - left<br>
