@@ -1,8 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import SnakeGame from './game.js';
-import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
 const DEBUG = false;
 
@@ -16,6 +14,15 @@ const RED_MESH = new THREE.MeshBasicMaterial( { color : 0xFF3131 } )
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 10;
+const CUBE_LENGTH = 2;
+
+const CAMERA_INIT_X = 0;
+const CAMERA_INIT_Y = 0;
+const CAMERA_INIT_Z = 30;
+
+const ORBIT_CENTER_X = 10;
+const ORBIT_CENTER_Y = -10;
+const ORBIT_CENTER_Z = 0;
 
 let renderer, scene, camera, controls, keyState;
 let prevMoveInputKey;
@@ -29,6 +36,44 @@ let cubeDB = new Map();
 // time units are in milliseconds
 let lastUpdateTime = performance.now();
 const GAME_TICK = 150;
+
+// Play instructions at top of screen
+var instructionText = document.createElement('div');
+instructionText.style.position = 'absolute';
+instructionText.style.width = 600;
+instructionText.style.height = 50;
+instructionText.style.backgroundColor = "white";
+instructionText.innerHTML = `Play the game with the arrow keys, refresh page to start a new game. Camera can be repositioned with WASD, Space, and Shift Keys.`;
+instructionText.style.top = 0 + 'px';
+instructionText.style.left = 400 + 'px';
+document.body.appendChild(instructionText);
+
+// initialize the scoreboard
+// current score
+var currScoreText = document.createElement('div');
+currScoreText.style.position = 'absolute';
+currScoreText.style.width = 200;
+currScoreText.style.height = 20;
+currScoreText.style.backgroundColor = "white";
+currScoreText.innerHTML = `Current Score: 0`;
+currScoreText.style.top = 0 + 'px';
+currScoreText.style.left = 0 + 'px';
+document.body.appendChild(currScoreText);
+// best score across time
+var bestScore = localStorage.getItem("bestScore");
+if (bestScore === null){
+  bestScore = 0;
+  localStorage.setItem("bestScore", bestScore);
+}
+var bestScoreText = document.createElement('div');
+bestScoreText.style.position = 'absolute';
+bestScoreText.style.width = 200;
+bestScoreText.style.height = 20;
+bestScoreText.style.backgroundColor = "white";
+bestScoreText.innerHTML = `Best Score: ${bestScore}`;
+bestScoreText.style.top = 20 + 'px';
+bestScoreText.style.left = 0 + 'px';
+document.body.appendChild(bestScoreText);
 
 function moveCamera() {
     let movementSpeed = 0.1;
@@ -70,6 +115,11 @@ function updateGame(game) {
     game - the game object
   */
 
+  // do not update game if game is over
+  if (gameOver) {
+    return;
+  }
+
   // get user movement input (refreshes as fast as the screen is drawn)
   var movementKeystroke;
   if (keyState['ArrowUp']) {
@@ -90,7 +140,6 @@ function updateGame(game) {
     prevMoveInputKey = movementKeystroke;
   }
 
-  var returnedGameState;
   if (prevMoveInputKey !== undefined ) {
 
     // only pass user input to the game at regular interval (that is, game state
@@ -105,7 +154,7 @@ function updateGame(game) {
     lastUpdateTime = currentTime;
 
     // pass movementKey to game
-    returnedGameState = game.nextGameState(prevMoveInputKey);
+    var returnedGameState = game.nextGameState(prevMoveInputKey);
     var newBoard = game.board;
 
     if (DEBUG) {
@@ -118,53 +167,52 @@ function updateGame(game) {
     // update board in scene
     updateBoard(newBoard);
 
+    // update current score
+    var currScore = game.snakeBody.length
+    updateScoreBoard(currScore);
+    
+    // TODO: update best score if current score is better than current score
+    
+    // end game if met end of game
+    switch(returnedGameState){
+      case 0: // continue game
+        return;
+      case 1: // a win (very unlikely) game is over
+        // TODO: update the scene if game is over
+        gameOver = true;
+        displayGameEndMessage("Wow, you actually beat the game. Congrats!");
+        break;
+      case -1: // a loss, game is over
+        // TODO: update the scene if game is over
+        gameOver = true;
+        displayGameEndMessage(`Game over. You finished with score: ${currScore}`);
+        break;
+    }
   } 
-  switch(returnedGameState){
-    case 0: // continue game
-      return;
-    case 1: // a win (very unlikely) game is over
-      // TODO: update the scene if game is over
-      gameOver = true;
-      break;
-    case -1: // a loss, game is over
-      // TODO: update the scene if game is over
-      gameOver = true;
-      break;
+}
+
+// update the current score given the newscore [int]
+function updateScoreBoard(newscore) {
+  currScoreText.innerHTML = `Current Score: ${newscore}`;
+  if (newscore > bestScore) {
+    localStorage.setItem("bestScore", newscore);
+    bestScoreText.innerHTML = `Best Score: ${newscore}`;
   }
 }
 
-// TODO: 
-// Text For Scoreboard. 
-
-// // font loader
-// const loader = new FontLoader();
-// loader.load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
-
-// 	const textGeometry = new TextGeometry( 'Scoreboard', {
-// 		font: font,
-// 		size: 80,
-// 		height: 5,
-// 		curveSegments: 12,
-// 		bevelEnabled: true,
-// 		bevelThickness: 10,
-// 		bevelSize: 8,
-// 		bevelOffset: 0,
-// 		bevelSegments: 5
-// 	} );
-
-//   // Create a material
-//   var textMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-//   // Create a mesh with the text geometry
-//   var textMesh = new THREE.Mesh(textGeometry, textMaterial);
-//   // Add it to the scene
-//   scene.add(textMesh);
-// } );
-
-// draw an axes helper... 
-// The X axis is red. The Y axis is green. The Z axis is blue. 
-// const axesHelper = new THREE.AxesHelper( 5 );
-// scene.add( axesHelper );
-
+// display an ending game message
+function displayGameEndMessage(text) {
+  // initialize the scoreboard
+  var gameEndText = document.createElement('div');
+  gameEndText.style.position = 'absolute';
+  gameEndText.style.width = 200;
+  gameEndText.style.height = 200;
+  gameEndText.style.backgroundColor = "red";
+  gameEndText.innerHTML = `${text}. Refresh the page to start a new game!`;
+  gameEndText.style.top = 100 + 'px';
+  gameEndText.style.left = 0 + 'px';
+  document.body.appendChild(gameEndText);
+}
 
 // Should only be called from the first time board
 // generation.
@@ -180,10 +228,9 @@ function generateCube(row, col, type) {
 
   // construct the cube with the right color and location in space
   // z should be a fixed value.
-  const cubeLength = 1;
-  const geometry = new THREE.BoxGeometry( cubeLength, cubeLength, cubeLength );
+  const geometry = new THREE.BoxGeometry( CUBE_LENGTH, CUBE_LENGTH, CUBE_LENGTH );
   let cube = new THREE.Mesh( geometry, material );
-  cube.position.set(col*cubeLength, -row*cubeLength, 3); // (x,y,z)
+  cube.position.set(col*CUBE_LENGTH, -row*CUBE_LENGTH, 3); // (x,y,z)
 
   return cube;
 
@@ -221,7 +268,7 @@ function updateBoard(board) {
       else if (newBoardVal === 2) { newMaterial = RED_MESH; }
       else { console.error(`Invalid board value encoutered: ${newBoardVal}`)}
 
-      // if (DEBUG) { console.log(`update cube at (x,y) = (${col}, ${row})`) }
+      if (DEBUG) { console.log(`update cube at (x,y) = (${col}, ${row})`) }
 
       // update the corresponding cell's cube's material (color)
       cubeDB[`${row},${col}`].material = newMaterial;
@@ -235,7 +282,6 @@ function animate(game){
 
   moveCamera()
 
-  // update game
   updateGame(game);
 
   renderer.render(scene, camera);
@@ -248,22 +294,11 @@ function init() {
   scene.background = new THREE.Color( 0x000000 );
   scene.fog = new THREE.Fog( 0x000000, 250, 1400 );
 
-  // LIGHTS
-  // const dirLight = new THREE.DirectionalLight( 0xffffff, 0.4 );
-  // dirLight.position.set( 0, 0, 1 ).normalize();
-  // scene.add( dirLight );
-
-  // const pointLight = new THREE.PointLight( 0xffffff, 4.5, 0, 0 );
-  // pointLight.color.setHSL( Math.random(), 1, 0.5 );
-  // pointLight.position.set( 0, 100, 90 );
-  // scene.add( pointLight );
-
   // define the camera
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.x = 0;
-  camera.position.y = 0;
-  camera.position.z = 20;
-  // camera.rotation.set(0,0,0);
+  camera.position.x = CAMERA_INIT_X;
+  camera.position.y = CAMERA_INIT_Y;
+  camera.position.z = CAMERA_INIT_Z;
 
   // define the renderer
   renderer = new THREE.WebGLRenderer();
@@ -272,7 +307,7 @@ function init() {
 
   // Setup OrbitControls for camera rotation with mouse
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0, 0); // Set the point to orbit around
+  controls.target.set(ORBIT_CENTER_X, ORBIT_CENTER_Y, ORBIT_CENTER_Z); // Set the point to orbit around
 
   // Allow camera movement with WASD, space to go up and shift to go down
   keyState = {};
