@@ -27,30 +27,50 @@ function euclideanDistance(cell1, cell2){
 
 export class SnakeGame {
   constructor(gridWidth, gridHeight){
-    this.score = 0;
-    this.board = []; // store game state 
-    this.direction = []; // store the directions snake cells should move in
-    this.snakeBody = []; // easy access to snake cells
+    this.board; // store game state 
+    this.direction; // store the directions snake cells should move in
+    this.snakeBody; // easy access to snake cells
+    this.head;
     this.gridWidth = gridWidth;
     this.gridHeight = gridHeight;
+    // all apples must spawn at least alpha blocks away from the head
+    this.alpha = 5;
 
     if (DEBUG) { console.log(`Board size: (W,H) = (${this.gridWidth},${this.gridHeight})`)}
 
     // init board and direction matrix
-    this.clearBoard()
-    this.clearDirection()
+    this.clearBoard();
+    this.clearDirection();
+    this.clearSnake();
 
     // init snake position
-    this.head = this.getRandomBoardCell();
-    this.board[this.head.row][this.head.col] = 1;
-    this.snakeBody.push(this.head)
+    this.initSnakeHead();
 
     if (DEBUG) { console.log(`Head at (x,y) = (${this.head.col},${this.head.row})`)}
 
-    // all apples must spawn at least alpha blocks away
-    // from the head
-    this.alpha = 5;
-    this.apple = this.genApple();
+    // generate apple
+    this.genApple();
+  }
+
+  // initialize a new game state
+  resetGameState(){
+    // init board and direction matrix
+    this.clearBoard();
+    this.clearDirection();
+    this.clearSnake();
+
+    // init snake position
+    this.initSnakeHead();
+
+    // generate apple
+    this.genApple();
+  }
+
+  // initialize the snake head
+  initSnakeHead(){
+    this.head = this.getRandomBoardCell();
+    this.board[this.head.row][this.head.col] = 1;
+    this.snakeBody.push(this.head)
   }
 
   // expect cell to be Object[int,int]
@@ -113,7 +133,7 @@ export class SnakeGame {
   // need to generate an apple at a position that is at least
   // alpha blocks away from the snake's head AND
   // isn't in the snake's body in any way
-  // return the object holding the apple's coords
+  // updates the object's apple property in place
   genApple(){
     let x = this.getRandomBoardCell();
     // while random board cell is in the body
@@ -124,7 +144,7 @@ export class SnakeGame {
     this.board[x.row][x.col] = 2;
     if (DEBUG) { console.log(`Apple spawn: (x,y) = (${x.col}, ${x.row})`)}
 
-    return x;
+    this.apple = x;
   }
 
   growSnake(moveDirection){
@@ -148,7 +168,7 @@ export class SnakeGame {
     this.direction[this.head.row][this.head.col] = moveDirection;
 
     // spawn a new apple
-    this.apple = this.genApple();
+    this.genApple();
   }
 
   moveSnake(moveDirection){
@@ -282,6 +302,17 @@ export class SnakeGame {
     }
   }
 
+  // clear the snakeBody
+  clearSnake(){
+    this.snakeBody = [];
+  }
+
+  // returns the current game state's user score
+  // which is just the length of the snake body
+  getScore(){
+    return this.snakeBody.length;
+  }
+
   // get a random valid board position
   // will be used to spawn in apples
   // returns: Object with 2 properties - row and col (both ints)
@@ -293,14 +324,15 @@ export class SnakeGame {
   }
 
   // main update entrance function to move from game state n to n+1
-  nextGameState(moveDirection){
+  nextGameState(inputKeystroke){
     /* movedirection is an int indicating the direction to move in
       input
-      moveDirection
+      inputKeystroke
         0 - up
         1 - right
         2 - down
         3 - left
+        -1 - restart game
     */
 
     if (DEBUG) {
@@ -309,14 +341,19 @@ export class SnakeGame {
       console.log(`Before Direction`)
       printBoard(this.direction);
     }
+
+    // reset the game state if input is -1
+    if (inputKeystroke === -1){
+      // restart the game
+      this.resetGameState();
+      return 0;
+    }
    
-    // TODO:
     // Expected output from updateSnake
     // 0 - ok, updated, continue game.
     // 1 - win, game over - no more cells to move in!
     // -1 - loss, game over - collision detected.
-    let updateSnakeResult = this.updateSnake(moveDirection);
-
+    let updateSnakeResult = this.updateSnake(inputKeystroke);
 
     if (DEBUG) {
       console.log(`updateSnake returned: ${updateSnakeResult}`)

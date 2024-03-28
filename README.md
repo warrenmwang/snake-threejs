@@ -10,6 +10,8 @@ The game itself is still played on a small 2D, flat screen.
 I might try to expand upon it to be a 3D version like the 
 one found on cool math games found [here](https://www.coolmathgames.com/0-snake-3d).
 
+If you do not know about the classic snake game, check it out [here on wikipedia](https://en.wikipedia.org/wiki/Snake_(video_game_genre)).
+
 ---
 ### Play Instructions
 Camera Lateral movement is controlled by:<br>
