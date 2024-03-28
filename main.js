@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import SnakeGame from './game.js';
 
-const DEBUG = true;
+const DEBUG = false;
 
 // create blocks of different colors that represent our game board.
 // White (0xEDEADE) - Empty Blocks (0)
@@ -16,8 +16,8 @@ const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 10;
 const CUBE_LENGTH = 2;
 
-const CAMERA_INIT_X = 0;
-const CAMERA_INIT_Y = 0;
+const CAMERA_INIT_X = 10;
+const CAMERA_INIT_Y = -10;
 const CAMERA_INIT_Z = 30;
 
 const ORBIT_CENTER_X = 10;
@@ -43,11 +43,12 @@ const GAME_TICK = 150;
 var instructionText = document.createElement('div');
 instructionText.style.position = 'absolute';
 instructionText.style.width = 800;
-instructionText.style.height = 90;
+instructionText.style.height = 80;
 instructionText.style.backgroundColor = "white";
-instructionText.innerHTML = `Play the game with the WASD keys. Press r to start a new game.
-Press c to toggle camera repositioning mode, allowing you to control the camera by using the WASD, space, 
-and shift keys. Camera angle can also be adjusted with the mouse, click and drag.`;
+instructionText.innerHTML = `Play the game with the WASD keys. Press r to restart the game.
+Press c to toggle on/off camera repositioning mode, allowing you to control the camera by using the WASD, space, 
+and shift keys; this pauses the game. Camera angle can also be adjusted with the mouse, click and drag, like in 3D modeling
+programs; this can be used at anytime.`;
 instructionText.style.top = 0 + 'px';
 instructionText.style.left = 300 + 'px';
 document.body.appendChild(instructionText);
@@ -80,35 +81,37 @@ bestScoreText.style.left = 0 + 'px';
 document.body.appendChild(bestScoreText);
 
 function moveCamera() {
+  if(cameraAdjustToggle){
     let movementSpeed = 0.1;
     let upVector = new THREE.Vector3(0, 1, 0); // Up vector
     let forwardVector = new THREE.Vector3().subVectors(controls.target, camera.position).normalize(); // Forward vector
     let sideVector = new THREE.Vector3().crossVectors(forwardVector, upVector).normalize(); // Side vector
 
     if (keyState['KeyW']) { // Move Forward
-        camera.position.addScaledVector(forwardVector, movementSpeed);
-        controls.target.addScaledVector(forwardVector, movementSpeed);
+      camera.position.addScaledVector(forwardVector, movementSpeed);
+      controls.target.addScaledVector(forwardVector, movementSpeed);
     }
     if (keyState['KeyS']) { // Move Backward
-        camera.position.addScaledVector(forwardVector, -movementSpeed);
-        controls.target.addScaledVector(forwardVector, -movementSpeed);
+      camera.position.addScaledVector(forwardVector, -movementSpeed);
+      controls.target.addScaledVector(forwardVector, -movementSpeed);
     }
     if (keyState['KeyA']) { // Move Left
-        camera.position.addScaledVector(sideVector, -movementSpeed);
-        controls.target.addScaledVector(sideVector, -movementSpeed);
+      camera.position.addScaledVector(sideVector, -movementSpeed);
+      controls.target.addScaledVector(sideVector, -movementSpeed);
     }
     if (keyState['KeyD']) { // Move Right
-        camera.position.addScaledVector(sideVector, movementSpeed);
-        controls.target.addScaledVector(sideVector, movementSpeed);
+      camera.position.addScaledVector(sideVector, movementSpeed);
+      controls.target.addScaledVector(sideVector, movementSpeed);
     }
     if (keyState['Space']) { // Move Up
-        camera.position.addScaledVector(upVector, movementSpeed);
-        controls.target.addScaledVector(upVector, movementSpeed);
+      camera.position.addScaledVector(upVector, movementSpeed);
+      controls.target.addScaledVector(upVector, movementSpeed);
     }
     if (keyState['ShiftLeft']) { // Move Down
-        camera.position.addScaledVector(upVector, -movementSpeed);
-        controls.target.addScaledVector(upVector, -movementSpeed);
+      camera.position.addScaledVector(upVector, -movementSpeed);
+      controls.target.addScaledVector(upVector, -movementSpeed);
     }
+  }
 }
 // only pass user input to the game at regular interval (that is, game state
 // is updated much slower than the actual refresh rate of the scene drawing.)
@@ -169,30 +172,55 @@ function updateGame(game) {
   var movementKeystroke;
 
   // get user movement input (refreshes as fast as the screen is drawn)
-  if (keyState['ArrowUp']) {
+  if (keyState['KeyW']) {
     movementKeystroke = 0;
-  } else if (keyState['ArrowRight']) {
+  } else if (keyState['KeyD']) {
     movementKeystroke = 1;
-  } else if (keyState['ArrowDown']) {
+  } else if (keyState['KeyS']) {
     movementKeystroke = 2;
-  } else if (keyState['ArrowLeft']) {
+  } else if (keyState['KeyA']) {
     movementKeystroke = 3;
-  } else if (keyState['KeyR']){
-    inputKeystroke = -1;
+  } else if (keyState['KeyR']) {
+    inputKeystroke = 'r';
+  } else if (keyState['KeyC']) {
+    inputKeystroke = 'c';
+  }
+
+  if (DEBUG) {
+    if (inputKeystroke !== undefined)
+      console.log(`entered inputKeystroke: ${inputKeystroke}`);
+    if (movementKeystroke !== undefined)
+    console.log(`entered movementKeystroke: ${movementKeystroke}`);
+  }
+
+  // check for a camera toggle
+  if (inputKeystroke === 'c'){
+    if(updateInterval()){
+      if (!cameraAdjustToggle)
+        cameraAdjustToggle = true;
+      else
+        cameraAdjustToggle = false;
+    }
+  }
+
+  // check for a game restart
+  if (inputKeystroke === 'r'){
+    restartGame(game);
+    return;
+  }
+
+  // do not allow movement of snake
+  // if camera toggle is enabled, don't want double movements
+  if (cameraAdjustToggle){
+    return;
   }
 
   // do not update game if game is over
   // unless it is a request to restart the game
   if (gameOver) {
-    if (inputKeystroke === -1){
-      restartGame(game);
-    }
     return;
   }
 
-  if (DEBUG) {
-    console.log(`entered: ${inputKeystroke}`);
-  }
 
   if (movementKeystroke !== undefined) {
     prevMovementKey = movementKeystroke;
@@ -339,7 +367,6 @@ function animate(game){
 }
 
 function init() {
-
   // SCENE
   scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x000000 );
@@ -359,6 +386,8 @@ function init() {
   // Setup OrbitControls for camera rotation with mouse
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(ORBIT_CENTER_X, ORBIT_CENTER_Y, ORBIT_CENTER_Z); // Set the point to orbit around
+
+  camera.lookAt(new THREE.Vector3(ORBIT_CENTER_X, ORBIT_CENTER_Y, ORBIT_CENTER_Z))
 
   // Allow camera movement with WASD, space to go up and shift to go down
   keyState = {};
