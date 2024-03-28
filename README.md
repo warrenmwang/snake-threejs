@@ -10,18 +10,20 @@ The game itself is still played on a small 2D, flat screen.
 I might try to expand upon it to be a 3D version like the 
 one found on cool math games found [here](https://www.coolmathgames.com/0-snake-3d).
 
+If you do not know about the classic snake game, check it out [here on wikipedia](https://en.wikipedia.org/wiki/Snake_(video_game_genre)).
+
 ---
 ### Play Instructions
-Camera Lateral movement is controlled by:
-`WASD` - forward, left, back, right
-`Space` - up
-`Shift` - down
+Camera Lateral movement is controlled by:<br>
+`WASD` - forward, left, back, right<br>
+`Space` - up<br>
+`Shift` - down<br>
+Also able to adjust lateral position with Right Mouse button click and drag.
+
+Camera angle is controlled by the Left Mouse button click and drag
 
 Snake movement is controlled by `Arrow Keys`:
-`ArrowUp` - up
-`ArrowDown` - down
-`ArrowRight` - right
-`ArrowLeft` - left
-
-Adjust camera angle with the Left Mouse button click and drag
-Adjust camera lateral position with Right Mouse button click and drag
+`ArrowUp` - up<br>
+`ArrowDown` - down<br>
+`ArrowRight` - right<br>
+`ArrowLeft` - left<br>

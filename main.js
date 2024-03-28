@@ -16,8 +16,8 @@ const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 10;
 const CUBE_LENGTH = 2;
 
-const CAMERA_INIT_X = 0;
-const CAMERA_INIT_Y = 0;
+const CAMERA_INIT_X = 10;
+const CAMERA_INIT_Y = -10;
 const CAMERA_INIT_Z = 30;
 
 const ORBIT_CENTER_X = 10;
@@ -25,8 +25,10 @@ const ORBIT_CENTER_Y = -10;
 const ORBIT_CENTER_Z = 0;
 
 let renderer, scene, camera, controls, keyState;
-let prevMoveInputKey;
+let prevMovementKey;
 let gameOver = false;
+let cameraAdjustToggle = false;
+var gameEndText;
 // use a dict as a mapping of {row,col} -> cube
 // so that later we can use the cell coords to get the cube
 // reference that we may want to alter the color of 
@@ -40,12 +42,15 @@ const GAME_TICK = 150;
 // Play instructions at top of screen
 var instructionText = document.createElement('div');
 instructionText.style.position = 'absolute';
-instructionText.style.width = 600;
-instructionText.style.height = 50;
+instructionText.style.width = 800;
+instructionText.style.height = 80;
 instructionText.style.backgroundColor = "white";
-instructionText.innerHTML = `Play the game with the arrow keys, refresh page to start a new game. Camera can be repositioned with WASD, Space, and Shift Keys.`;
+instructionText.innerHTML = `Play the game with the WASD keys. Press r to restart the game.
+Press c to toggle on/off camera repositioning mode, allowing you to control the camera by using the WASD, space, 
+and shift keys; this pauses the game. Camera angle can also be adjusted with the mouse, click and drag, like in 3D modeling
+programs; this can be used at anytime.`;
 instructionText.style.top = 0 + 'px';
-instructionText.style.left = 400 + 'px';
+instructionText.style.left = 300 + 'px';
 document.body.appendChild(instructionText);
 
 // initialize the scoreboard
@@ -55,7 +60,7 @@ currScoreText.style.position = 'absolute';
 currScoreText.style.width = 200;
 currScoreText.style.height = 20;
 currScoreText.style.backgroundColor = "white";
-currScoreText.innerHTML = `Current Score: 0`;
+currScoreText.innerHTML = `Current Score: 1`;
 currScoreText.style.top = 0 + 'px';
 currScoreText.style.left = 0 + 'px';
 document.body.appendChild(currScoreText);
@@ -76,35 +81,83 @@ bestScoreText.style.left = 0 + 'px';
 document.body.appendChild(bestScoreText);
 
 function moveCamera() {
+  if(cameraAdjustToggle){
     let movementSpeed = 0.1;
     let upVector = new THREE.Vector3(0, 1, 0); // Up vector
     let forwardVector = new THREE.Vector3().subVectors(controls.target, camera.position).normalize(); // Forward vector
     let sideVector = new THREE.Vector3().crossVectors(forwardVector, upVector).normalize(); // Side vector
 
     if (keyState['KeyW']) { // Move Forward
-        camera.position.addScaledVector(forwardVector, movementSpeed);
-        controls.target.addScaledVector(forwardVector, movementSpeed);
+      camera.position.addScaledVector(forwardVector, movementSpeed);
+      controls.target.addScaledVector(forwardVector, movementSpeed);
     }
     if (keyState['KeyS']) { // Move Backward
-        camera.position.addScaledVector(forwardVector, -movementSpeed);
-        controls.target.addScaledVector(forwardVector, -movementSpeed);
+      camera.position.addScaledVector(forwardVector, -movementSpeed);
+      controls.target.addScaledVector(forwardVector, -movementSpeed);
     }
     if (keyState['KeyA']) { // Move Left
-        camera.position.addScaledVector(sideVector, -movementSpeed);
-        controls.target.addScaledVector(sideVector, -movementSpeed);
+      camera.position.addScaledVector(sideVector, -movementSpeed);
+      controls.target.addScaledVector(sideVector, -movementSpeed);
     }
     if (keyState['KeyD']) { // Move Right
-        camera.position.addScaledVector(sideVector, movementSpeed);
-        controls.target.addScaledVector(sideVector, movementSpeed);
+      camera.position.addScaledVector(sideVector, movementSpeed);
+      controls.target.addScaledVector(sideVector, movementSpeed);
     }
     if (keyState['Space']) { // Move Up
-        camera.position.addScaledVector(upVector, movementSpeed);
-        controls.target.addScaledVector(upVector, movementSpeed);
+      camera.position.addScaledVector(upVector, movementSpeed);
+      controls.target.addScaledVector(upVector, movementSpeed);
     }
-    if (keyState['ShiftLeft'] || keyState['ShiftRight']) { // Move Down
-        camera.position.addScaledVector(upVector, -movementSpeed);
-        controls.target.addScaledVector(upVector, -movementSpeed);
+    if (keyState['ShiftLeft']) { // Move Down
+      camera.position.addScaledVector(upVector, -movementSpeed);
+      controls.target.addScaledVector(upVector, -movementSpeed);
     }
+  }
+}
+// only pass user input to the game at regular interval (that is, game state
+// is updated much slower than the actual refresh rate of the scene drawing.)
+// check to see if it has been at least updateInterval time since the last update
+// return true if allow to update
+// else return false if not allow to update yet
+function updateInterval(){
+  // ---- UPDATE INTERVAL ----
+  let currentTime = performance.now();
+  let timeSinceLastUpdate = currentTime - lastUpdateTime;
+  if (timeSinceLastUpdate < GAME_TICK) {
+    return false; // quit if not enough time has passed
+  }
+  // otherwise, update the game (and the lastUpdatetime)!
+  lastUpdateTime = currentTime;
+
+  return true;
+}
+
+// restart the game
+function restartGame(game){
+  if(!updateInterval()){
+    return;
+  }
+
+  // clear prevMovementKey
+  prevMovementKey = undefined;
+
+  // clear the game end message if any
+  if (gameEndText !== undefined){
+    document.body.removeChild(gameEndText);
+    gameEndText = undefined;
+  }
+
+  gameOver = false;
+
+  // pass movementKey to game
+  game.nextGameState(-1);
+  var newBoard = game.board;
+
+  // update board in scene
+  updateBoard(newBoard);
+
+  // update current score
+  var currScore = game.getScore();
+  updateScoreBoard(currScore);
 }
 
 // update game at regular timing
@@ -115,46 +168,72 @@ function updateGame(game) {
     game - the game object
   */
 
+  var inputKeystroke;
+  var movementKeystroke;
+
+  // get user movement input (refreshes as fast as the screen is drawn)
+  if (keyState['KeyW']) {
+    movementKeystroke = 0;
+  } else if (keyState['KeyD']) {
+    movementKeystroke = 1;
+  } else if (keyState['KeyS']) {
+    movementKeystroke = 2;
+  } else if (keyState['KeyA']) {
+    movementKeystroke = 3;
+  } else if (keyState['KeyR']) {
+    inputKeystroke = 'r';
+  } else if (keyState['KeyC']) {
+    inputKeystroke = 'c';
+  }
+
+  if (DEBUG) {
+    if (inputKeystroke !== undefined)
+      console.log(`entered inputKeystroke: ${inputKeystroke}`);
+    if (movementKeystroke !== undefined)
+    console.log(`entered movementKeystroke: ${movementKeystroke}`);
+  }
+
+  // check for a camera toggle
+  if (inputKeystroke === 'c'){
+    if(updateInterval()){
+      if (!cameraAdjustToggle)
+        cameraAdjustToggle = true;
+      else
+        cameraAdjustToggle = false;
+    }
+  }
+
+  // check for a game restart
+  if (inputKeystroke === 'r'){
+    restartGame(game);
+    return;
+  }
+
+  // do not allow movement of snake
+  // if camera toggle is enabled, don't want double movements
+  if (cameraAdjustToggle){
+    return;
+  }
+
   // do not update game if game is over
+  // unless it is a request to restart the game
   if (gameOver) {
     return;
   }
 
-  // get user movement input (refreshes as fast as the screen is drawn)
-  var movementKeystroke;
-  if (keyState['ArrowUp']) {
-    movementKeystroke = 0;
-  } else if (keyState['ArrowRight']) {
-    movementKeystroke = 1;
-  } else if (keyState['ArrowDown']) {
-    movementKeystroke = 2;
-  } else if (keyState['ArrowLeft']) {
-    movementKeystroke = 3;
-  }
-
-  if (DEBUG) {
-    console.log(`entered: ${movementKeystroke}`);
-  }
 
   if (movementKeystroke !== undefined) {
-    prevMoveInputKey = movementKeystroke;
+    prevMovementKey = movementKeystroke;
   }
 
-  if (prevMoveInputKey !== undefined ) {
-
-    // only pass user input to the game at regular interval (that is, game state
-    // is updated much slower than the actual refresh rate of the scene drawing.)
-    // check to see if it has been at least updateInterval time since the last update
-    let currentTime = performance.now();
-    let timeSinceLastUpdate = currentTime - lastUpdateTime;
-    if (timeSinceLastUpdate < GAME_TICK) {
-      return; // quit if not enough time has passed
+  if (prevMovementKey !== undefined) {
+    // update game if enough time passed since last update
+    if(!updateInterval()){
+      return;
     }
-    // otherwise, update the game (and the lastUpdatetime)!
-    lastUpdateTime = currentTime;
 
     // pass movementKey to game
-    var returnedGameState = game.nextGameState(prevMoveInputKey);
+    var returnedGameState = game.nextGameState(prevMovementKey);
     var newBoard = game.board;
 
     if (DEBUG) {
@@ -168,7 +247,7 @@ function updateGame(game) {
     updateBoard(newBoard);
 
     // update current score
-    var currScore = game.snakeBody.length
+    var currScore = game.getScore();
     updateScoreBoard(currScore);
     
     // TODO: update best score if current score is better than current score
@@ -203,7 +282,7 @@ function updateScoreBoard(newscore) {
 // display an ending game message
 function displayGameEndMessage(text) {
   // initialize the scoreboard
-  var gameEndText = document.createElement('div');
+  gameEndText = document.createElement('div');
   gameEndText.style.position = 'absolute';
   gameEndText.style.width = 200;
   gameEndText.style.height = 200;
@@ -288,7 +367,6 @@ function animate(game){
 }
 
 function init() {
-
   // SCENE
   scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x000000 );
@@ -308,6 +386,8 @@ function init() {
   // Setup OrbitControls for camera rotation with mouse
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(ORBIT_CENTER_X, ORBIT_CENTER_Y, ORBIT_CENTER_Z); // Set the point to orbit around
+
+  camera.lookAt(new THREE.Vector3(ORBIT_CENTER_X, ORBIT_CENTER_Y, ORBIT_CENTER_Z))
 
   // Allow camera movement with WASD, space to go up and shift to go down
   keyState = {};
