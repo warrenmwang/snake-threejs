@@ -14,16 +14,17 @@ If you do not know about the classic snake game, check it out [here on wikipedia
 
 ---
 ### Play Instructions
-Camera Lateral movement is controlled by:<br>
-`WASD` - forward, left, back, right<br>
-`Space` - up<br>
-`Shift` - down<br>
-Also able to adjust lateral position with Right Mouse button click and drag.
+The snake is controlled by the standard WASD keys
+`W` - Up<br>
+`S` - Down<br>
+`A` - Left<br>
+`D` - Right<br>
 
-Camera angle is controlled by the Left Mouse button click and drag
+To reset the game, press `r`. 
 
-Snake movement is controlled by `Arrow Keys`:
-`ArrowUp` - up<br>
-`ArrowDown` - down<br>
-`ArrowRight` - right<br>
-`ArrowLeft` - left<br>
+To pause the game and/or to change the camera angle, press `c`. 
+
+After pausing the game, you can change the camera angle with the same WASD keys.
+The camera fov is fixed at the center of the board, and you can also manipulate your view 
+of the board using the mouse left and right buttons with click and drag, similar to manipulating
+an object in a 3D modeling program. 

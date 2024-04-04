@@ -287,7 +287,7 @@ function displayGameEndMessage(text) {
   gameEndText.style.width = 200;
   gameEndText.style.height = 200;
   gameEndText.style.backgroundColor = "red";
-  gameEndText.innerHTML = `${text}. Refresh the page to start a new game!`;
+  gameEndText.innerHTML = `${text}. Press r to start a new game!`;
   gameEndText.style.top = 100 + 'px';
   gameEndText.style.left = 0 + 'px';
   document.body.appendChild(gameEndText);
