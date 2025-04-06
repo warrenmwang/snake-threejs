@@ -5,7 +5,7 @@
   I can figure that out.
 */
 
-var DEBUG = false;
+let DEBUG = false;
 
 /*
   Let us define the values in the board that will represent different things:
@@ -181,7 +181,7 @@ export class SnakeGame {
     this.direction[this.head.row][this.head.col] = moveDirection;
 
     // move snake by using the direction in the direction matrix
-    var row, col, currDir;
+    let row, col, currDir;
     for(const i in this.snakeBody){
       row = this.snakeBody[i].row;
       col = this.snakeBody[i].col;
