@@ -31,8 +31,8 @@ an object in a 3D modeling program.
 
 ---
 ### TODO
-- [ x ] disable toggling speed when game has started
-- [ x ] pressing `r` should close game over popup
+- [x] disable toggling speed when game has started
+- [x] pressing `r` should close game over popup
 - [ ] add textures to the snake (head, body) and apple
 - [ ] add separate mode where board is a cube you slither around, actually 3d space and camera follows head of snake
 - [ ] move document var accesses and event listeners into main.js where possible
