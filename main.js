@@ -251,8 +251,6 @@ class Main {
       let currScore = this.game.getScore();
       this.updateScoreBoard(currScore);
 
-      // TODO: update best score if current score is better than current score
-
       // end game if met end of game
       switch (returnedGameState) {
         case 0: // continue game
@@ -384,9 +382,7 @@ class Main {
   }
 
   animate() {
-    requestAnimationFrame(() =>
-      this.animate(this.game, this.currScoreText, this.bestScoreText)
-    );
+    requestAnimationFrame(() => this.animate());
 
     // Always update camera movement and render at the screen's refresh rate
     this.moveCamera();

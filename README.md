@@ -28,3 +28,11 @@ After pausing the game, you can change the camera angle with the same WASD keys.
 The camera fov is fixed at the center of the board, and you can also manipulate your view 
 of the board using the mouse left and right buttons with click and drag, similar to manipulating
 an object in a 3D modeling program. 
+
+---
+### TODO
+- [ ] disable toggling speed when game has started
+- [ ] pressing `r` should close game over popup
+- [ ] add textures to the snake (head, body) and apple
+- [ ] add separate mode where board is a cube you slither around, actually 3d space and camera follows head of snake
+- [ ] move document var accesses and event listeners into main.js where possible
