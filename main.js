@@ -9,6 +9,8 @@ import {
   createScoreContainer,
   createShowInstructionsButton,
   createSpeedSlider,
+  disableSpeedSlider,
+  enableSpeedSlider,
 } from "./ui.js";
 import { generateBoard, updateBoard } from "./graphics.js";
 import {
@@ -134,7 +136,7 @@ class Main {
     this.blurOverlay = blurOverlay;
 
     createShowInstructionsButton(instructionsPopup, blurOverlay);
-    createSpeedSlider((newSpeed) => {
+    this.speedSlider = createSpeedSlider((newSpeed) => {
       this.gameSpeed = newSpeed;
     });
 
@@ -149,18 +151,16 @@ class Main {
     let [gameEndText, gameOverTitle, gameOverMessage, restartButton] =
       createEndGameComponents(text);
 
-    restartButton.addEventListener("click", () => {
-      document.body.removeChild(gameEndText);
-      gameEndText = undefined;
-      this.blurOverlay.style.display = "none";
-      this.restartGame();
-    });
-
     gameEndText.appendChild(gameOverTitle);
     gameEndText.appendChild(gameOverMessage);
     gameEndText.appendChild(restartButton);
 
     document.body.appendChild(gameEndText);
+    this.gameEndText = gameEndText;
+
+    restartButton.addEventListener("click", () => {
+      this.restartGame();
+    });
   }
 
   updateGame() {
@@ -225,6 +225,7 @@ class Main {
 
     if (movementKeystroke !== undefined) {
       this.prevMovementKey = movementKeystroke;
+      disableSpeedSlider(this.speedSlider);
     }
 
     if (this.prevMovementKey !== undefined) {
@@ -346,10 +347,14 @@ class Main {
     // clear prevMovementKey
     this.prevMovementKey = undefined;
 
+    // re-enable speed slider
+    enableSpeedSlider(this.speedSlider);
+
     // clear the game end message if any
     if (this.gameEndText !== undefined) {
       document.body.removeChild(this.gameEndText);
       this.gameEndText = undefined;
+      this.blurOverlay.style.display = "none";
     }
 
     // Exit camera mode if active

@@ -231,6 +231,20 @@ export function createSpeedSlider(updateGameSpeedFn) {
     updateGameSpeedFn(Math.round(1000 / movesPerSecond));
     speedValue.innerHTML = `${movesPerSecond} moves/sec`;
   });
+
+  return speedSlider;
+}
+
+export function disableSpeedSlider(slider) {
+  slider.disabled = true;
+  slider.style.opacity = 0.5;
+  slider.style.pointerEvents = "none";
+}
+
+export function enableSpeedSlider(slider) {
+  slider.disabled = false;
+  slider.style.opacity = 1;
+  slider.style.pointerEvents = "auto";
 }
 
 export function createCameraModeIndicator() {
