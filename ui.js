@@ -67,7 +67,7 @@ export function createFirstTimeUserInstructionsPopup() {
   overlay.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
   overlay.style.backdropFilter = "blur(5px)";
   overlay.style.webkitBackdropFilter = "blur(5px)"; // For Safari
-  overlay.style.zIndex = "999";
+  overlay.style.zIndex = "1000";
   overlay.style.display = "none";
   document.body.appendChild(overlay);
 

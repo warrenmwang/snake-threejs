@@ -163,6 +163,30 @@ class Main {
     });
   }
 
+  goingIntoBody(newMoveDir) {
+    // disallow opposite direction basically.
+    // newMoveDir
+    //     0 - up
+    //     1 - right
+    //     2 - down
+    //     3 - left
+
+    // can't go into body if all we have is the head
+    if (this.game.getScore() === 1) {
+      return false;
+    }
+
+    if (
+      (this.prevMovementKey === 0 && newMoveDir === 2) ||
+      (this.prevMovementKey === 1 && newMoveDir === 3) ||
+      (this.prevMovementKey === 2 && newMoveDir === 0) ||
+      (this.prevMovementKey === 3 && newMoveDir === 1)
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   updateGame() {
     // update game at regular timing
     // if the user enters a keystroke that is a registered
@@ -224,8 +248,16 @@ class Main {
     }
 
     if (movementKeystroke !== undefined) {
-      this.prevMovementKey = movementKeystroke;
-      disableSpeedSlider(this.speedSlider);
+      // disable speed slider once snake has started moving (game has started)
+      if (this.prevMovementKey === undefined) {
+        disableSpeedSlider(this.speedSlider);
+      }
+
+      // disallow moving head into body
+      if (!this.goingIntoBody(movementKeystroke)) {
+        // update continuous move dir
+        this.prevMovementKey = movementKeystroke;
+      }
     }
 
     if (this.prevMovementKey !== undefined) {
